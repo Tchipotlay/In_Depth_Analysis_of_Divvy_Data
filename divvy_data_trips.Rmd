@@ -1,0 +1,1191 @@
+---
+title: "An In Depth Analysis of the Divvy Bikes Public Data"
+author: "Matthew Ridge"
+date: "2023-07-31"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# Summary
+
+### Executive Summary: Analysis of Divvy's Bike-Sharing Data
+
+1. Ride Frequency Analysis:
+   * Monthly Distribution: Both member and casual riders showed a clear preference for biking during the summer months (June, July, and August) and a decline during the winter months (December, January, and February). Notably, member riders consistently outpaced casual riders in terms of ride frequency throughout the year.
+   * Daily Distribution: Key events and festivals in the city, such as the St. Patrick's Day Parade, music festivals, and the Chicago marathon, were found to significantly influence the daily ride frequency.
+   
+2. Peak Ride Times:
+   * Yearly Overview: Casual riders displayed the least activity at 4:00 AM and were most active around 5:00 PM. Members demonstrated a bimodal behavior, suggesting morning commutes at 8:00 AM and evening returns around 5:00 PM.
+   * Monthly Overview: The patterns observed in the yearly overview were consistently reflected on a monthly basis.
+   
+3. Preferred Starting Locations:
+   * Casual riders showed a strong preference for a particular location, whereas member riders had a more evenly distributed preference across the top 10 locations. However, preferences for starting locations varied with seasons and months.
+   
+4. Preferred Bike Type:
+   * Across the year, both rider groups showed a consistent preference for classic bikes over electric bikes. The only exception was observed in the colder months (October, November, and December) where casual riders showed a slightly higher preference for electric bikes.
+
+5. Seasonal Behavior:
+   * Ride behavior was found to be strongly correlated with the average temperatures of Chicago, with warmer seasons reflecting higher ride frequencies.
+
+### Insights and Recommendations:
+
+   * Seasonal Planning: Divvy should ramp up its operations and maintenance activities during the summer months and scale down during the winter.
+   * Event-Based Promotions: Given the surge in rides during city events and festivals, Divvy could consider event-based promotions or partnerships to further boost ridership.
+   * Member Focus: Strategies to convert casual riders to members could be beneficial, considering the consistent ride frequency demonstrated by members.
+   * Bike Availability: Ensure that classic bikes, being the preferred choice, are readily available across all stations. Additionally, during colder months, electric bikes should be more available, catering to the preferences of casual riders.
+   * Location Analysis: Dive deeper into why certain locations are preferred, especially by casual riders, and explore the feasibility of expanding or enhancing services at these stations.
+
+## 1. Introduction
+
+### 1.1 Background
+
+  Divvy is a bike-sharing service in Chicago, Illinois, offering residents and tourists a fun, convenient, eco-friendly and affordable mode of transportation across the city. Recent shifts in urban congestion and sustainable transport modes have put bike-sharing systems like Divvy in a place to critically shape the future of urban mobility. Analyzing Divvy's bike sharing data provides insights into user behaviors and preferences, Such analyses are essential for city planners, policymakers, and businesses to understand transportation trends and make informed decisions.
+
+### 1.2 Objective
+
+  The primary aim of this report is to delve deep into the Divvy bicycle ride datasets to uncover patterns, trends, and insights that can inform strategic decisions and improve the user experience. Specific objectives include:
+
+* User Behavior Analysis: Understand the preferences and behaviors of Divvy's users, differentiated by members and casual riders, to tailor services better and design targeted marketing campaigns.
+* Ride Frequency and Peak Times: Identify peak usage times, seasonally, monthly, and hourly, to ensure optimal bike and dock availability and enhance user convenience.
+* Station Traffic Analysis: Assess the popularity and utilization of various Divvy stations to inform potential station expansions, relocations, or service enhancements.
+* Rideable Types Distribution: Analyze the preference between classic and electric bikes to guide inventory decisions and potential fleet expansions.
+
+  By achieving these objectives, the report seeks to offer actionable insights that can enhance Divvy's operational efficiency, user satisfaction, and overall impact on Chicago's urban mobility landscape.
+
+## 2. Dataset Overview
+
+### 2.1 Data Collection Overview
+
+  The Divvy bicycle data represents a collection of ride information for Divvy bike-sharing services, a public bicycle sharing system in Chicago, Illinois. The data was sourced from the Divvy's publicly available datasets, which are released periodically to offer insights into the usage and performance of their bike-sharing service.
+
+#### Method of Collection
+
+* Digital Tracking: Each Divvy bicycle is equipped with sensors and GPS units that digitally track and record ride information, such as the start and end times of each trip, the type of bike used, and the stations involved.
+
+* Station Data: In addition to ride data, Divvy also maintains a comprehensive record of all their bicycle stations, detailing their locations, the number of docking spots, and the date they became operational.
+
+### 2.2 Comprehensive Dataset Description
+
+  The Divvy bicycle datasets encompass two main data categories: ride data and station data.
+
+a. Ride Data (yyyymm-divvy-tripdata.csv):
+
+   * This dataset offers detailed insights into individual rides taken using Divvy bikes.
+
+   * Source: The data is sourced directly from Divvy's operational records, collected via the digital tracking systems on each bike.
+
+   * Nature of Data: Each entry in this dataset represents a single ride, detailing:
+
+     + Ride ID: A unique identifier for the trip.
+     + Rideable Type: The type of bike used (e.g., electric, classic).
+     + Start and End Timestamps: Precise times of when the ride began and concluded.
+     + Start and End Stations: Names of the stations where the ride started and ended.
+     + Rider Type: Classification of the rider as a member (subscriber) or casual (non-subscriber).
+     + Scope: The dataset spans one year, capturing the patterns, preferences, and behaviors of Divvy riders over various periods, seasons, and special events.
+
+b. Station Data (Divvy_Bicycle_Stations.csv):
+
+   * This dataset provides comprehensive information about Divvy's bicycle stations.
+
+   * Source: The data is maintained and updated by Divvy's operational teams to keep track of their stations' statuses and capacities.
+
+   * Nature of Data: Each entry in this dataset represents a single Divvy bicycle station, detailing:
+
+     + Station ID: A unique identifier for the station.
+     + Station Name: The station's name.
+     + Latitude, Longitude, and Location: The geographical coordinates pinpointing the station's location.
+     + Total Docks and Docks in Service: The number of docking spots at the station.
+     + Scope: The dataset encompasses all Divvy stations, offering insights into their distribution, capacity, and operational timelines.
+
+### 2.3 Data Collection
+
+  Two different websites were referenced in the collection of this data. The first was the Divvy Tripdata bucket:
+  
+   * https://divvy-tripdata.s3.amazonaws.com/index.html
+   
+  The second was the City of Chicago's Data Portal which provided me with exact coords for the stations, listed by station name: 
+  
+   * https://data.cityofchicago.org/Transportation/Divvy-Bicycle-Stations/bbyy-e7gq/data
+   
+### 2.4 Data Structure
+
+* Dataset: yyyymm-divvy-tripdata.csv
+
+  + General Structure:This dataset contains trip data for Divvy bike rides from January 2022 to December 2022. Each row represents a single ride taken by a user and the following information from each ride is collected for analysis. 
+
+  + Columns:
+
+    1. ride_id:
+       * Data Type: Character/String
+       * Description: A unique identifier for each ride.
+
+    2. rideable_type:
+       * Data Type: Categorical/Character
+       * Description: The type of bike used for the ride. Categories include electric bikes, classic bikes, and docked bikes.
+
+    3. started_at:
+       * Data Type: Datetime
+       * Description: The date and timestamp of when the ride started.
+
+    4. ended_at:
+       * Data Type: Datetime
+       * Description: The date timestamp of when the ride ended.
+
+    5. tart_station_name:
+       * Data Type: Character/String
+       * Description: The name of the station where the ride started.
+
+    6. start_station_id:
+       * Data Type: Character/String
+       * Description: The unique identifier of the station where the ride started.
+
+    7. end_station_name:
+       * Data Type: Character/String
+       * Description: The name of the station where the ride ended.
+
+    8. end_station_id:
+       * Data Type: Character/String
+       * Description: The unique identifier of the station where the ride ended.
+
+    9. start_lat:
+       * Data Type: Numeric/Double
+       * Description: The latitude coordinate of the station's latitude location where the ride started.
+
+    10. start_lng:
+       * Data Type: Numeric/Double
+       * Description: The longitude coordinate of the station's longitude location where the ride started.
+
+    11. end_lat:
+       * Data Type: Numeric/Double
+       * Description: The latitude coordinate of the station's latitude location where the ride ended.
+
+    12. end_lng:
+       * Data Type: Numeric/Double
+       * Description: The longitude coordinate of the station's longitude location where the ride ended.
+
+    13. member_casual:
+       * Data Type: Categorical/Character
+       * Description: The type of rider. Categories include "member" (for subscribers or members) and "casual" (for non-subscribers or casual riders).
+
+* Dataset: Divvy_Bicycle_Stations
+
+  + General Structure: This dataset contains information about the Divvy bicycle stations. Each row represents a single station providing details on the name, location and service details of the station.
+
+  + Columns:
+
+    1. ID:
+       * Data Type: Numeric/Integer
+       * Description: A unique identifier for each station.
+
+    2. Station Name:
+       * Data Type: Character/String
+       * Description: The name of the station.
+
+    3. Total Docks:
+       * Data Type: Numeric/Integer
+       * Description: The number of docking spots available at the station.
+
+    4. Docks in Service:
+       * Data Type: Numeric/Integer
+       * Description: The number of docking spots in service at the station.
+
+    5. Status:
+       * Data Type: Character/String
+       * Description: A description detailing if the station is in service or not.
+
+    6. Latitude:
+       * Data Type: Numeric/Double
+       * Description: The latitude coordinate of the station's location.
+
+    7. Longitude:
+       * Data Type: Numeric/Double
+       * Description: The longitude coordinate of the station's location.
+
+    8. Location:
+       * Data Type: Character/String
+       * Description: The latitude and longitude coordinate of the station's location.
+
+## 3. Data Cleaning and Pre-processing
+
+### 3.1 Overview and Pre-requisites
+
+#### Ensuring Data Quality and Readiness for Analysis:
+
+1. Data Acquisition: 
+   * Source Verification: Data was acquired from a reliable and official source to ensure its authenticity.
+   * Data Completeness: Ensured that the dataset covered the desired timeline, focusing on the year 2022.
+   
+2. Data Cleaning:
+   * Handling Missing Values: Identified and addressed missing values in the dataset. Depending on their nature and impact, missing values were either filled with appropriate techniques or the affected rows were excluded.
+   * Data Transformation: Converted the 'started_at' and 'ended_at' columns to the appropriate datetime format to facilitate time-based analyses.
+   * Anomaly Detection: Identified and addressed potential outliers or anomalies that could skew the analysis.
+   
+3. Data Enrichment:
+   * Feature Engineering: Derived new columns like 'ride_duration' by subtracting the 'started_at' column from the 'ended_at' column. This provided a more direct metric for analyzing ride durations.
+   * Seasonality: Added a 'season' column to the dataset to categorize each month into a particular season, thereby allowing for season-based analyses.
+
+4. Data Validation:
+   * Consistency Checks: Ensured that data entries, especially in categorical columns, were consistent. For instance, making sure that 'rideable_type' didn't have variations like 'Bike', 'bike', 'BIKE', etc.
+   * Logical Checks: Validated that the 'started_at' was always earlier than 'ended_at' for all ride entries. Any discrepancies would indicate data integrity issues.
+
+5. Exploratory Data Analysis (EDA):
+   * Distribution Analysis: Checked the distribution of key metrics, like ride durations, to understand the dataset's nature and identify any potential anomalies.
+   * Trend Identification: Observed trends and patterns over time, such as ride frequencies by month, day, and season.
+   * Segmentation: Segmented the data based on rider type ('member' vs. 'casual') to identify distinct patterns or behaviors between the groups.
+
+6. Data Readiness:
+   * Subsetting: For specific analyses, like the one focused on the year 2022, relevant subsets of the data were created.
+   * Aggregation: Data was aggregated at different levels (e.g., monthly, seasonally) to facilitate various parts of the analysis.
+
+
+We First Consider if the data sets can be merged or not by comparing the column names between the data sets.
+
+#```{r}
+# options(repos = c(CRAN = "https://cloud.r-project.org/"))
+# install.packages("lubridate")
+# install.packages("tidytext")
+#```
+
+```{r}
+library(forecast)
+library(scales)
+library(tidytext)
+library(lubridate)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+# Load all the datasets
+data_files <- list.files(pattern = "2022.*-divvy-tripdata.csv")
+datasets <- lapply(data_files, read.csv)
+
+# Check if all datasets have the same column names
+all_same_cols <- all(sapply(datasets[-1], function(x) all(colnames(datasets[[1]]) == colnames(x))))
+
+if (all_same_cols) {
+  print("Datasets can be merged")
+} else {
+  print("Datasets cannot be merged directly due to differing column names.")
+}
+```
+
+### 3.2 Missing Values
+
+  We note the only blank cells occur in the "end_lat" and "end_lng" columns. Looking further into these attributes we see that the latitude and longitude is slightly different for each bike at the same docking station. So multiple bikes at the same station will have slightly different geo-location data. For this reason, we will use the locations given by the Divvy_Bicycle_Stations dataset and identify each location by its site name, thus giving one latitude and longitude for each bike at a given docking station. With this approach we will ignore the end_lat and end_lng, thus preserving their other entries for other analysis.
+
+```{r results='hide'}
+# Check for missing values in each dataset
+lapply(datasets, function(x) colSums(is.na(x)))
+```
+
+### 3.3 Duplicates and Inconsistencies
+
+  We note that there are no duplicated values, hence no action needs to be taken. Data types appear to be valid at this time; adjustments can be made later for analysis, as needed.
+
+```{r results='hide'}
+# Check for duplicated rows in each dataset
+lapply(datasets, function(x) anyDuplicated(x))
+
+# Check for inconsistent data types in each dataset
+lapply(datasets, function(x) sapply(x, class))
+```
+
+### 3.4 Data Transformation
+
+  At this point we will merge the data and continue our exploration of the data's integrity by considering the consistency in categorical variables
+
+```{r}
+# Merge all datasets
+merged_data <- bind_rows(datasets)
+head(merged_data)
+```
+
+  Following the merger of datasets, we re-consider missing values, duplicated rows, and inconsistent data types to ensure the merger concluded smoothly. We get, still, that the only concerning item to note is the missing values in end_lat and end_lng, which we have already established we wont use. So we move on to check for inconsistencies.
+
+```{r}
+# Check for missing values in the merged dataset
+colSums(is.na(merged_data))
+
+# Check for duplicated rows in the merged dataset
+anyDuplicated(merged_data)
+
+# Check for inconsistent data types in the merged dataset
+sapply(merged_data, class)
+```
+
+  Checking for inconsistencies, we looks specifically for the frequency of occurances in each column and check that frequency to see if it is less than five. The assumption is that this should help capture outliers and errors. For this reason, we do not need to concern ourselves with the columns: ride_id, rideable_type, started_at, ended_at, start_station_id, end_station_id, start_lat, start_lng, end_lat, or end_lng. The geo-locations found in this current form of the dataset will be replaced by the geo-location pulled from the Divvy_Bicycle_Stations. The ID's will not be used in lieu of the station names. The started_at and ended_at are ignored since time is continuous and a frequency count, here, should be handled with bins.
+
+  After running the code on the column types rideable_type, start_station_name, end_station_name, and member_casual, we see that start_station_name and end_station_name are the only categories that have any inconsistencies.
+
+```{r}
+inconsistencies <- function(data, column_name) {
+  counts <- table(data[[column_name]])
+  inconsistent_categories <- names(counts)[counts < 5]
+  
+  if (length(inconsistent_categories) > 0) {
+    cat("Inconsistencies found in column:", column_name, "\n")
+    print(head(inconsistent_categories),5)
+    return(data[data[[column_name]] %in% inconsistent_categories, ])
+  } else {
+    cat("No inconsistencies found in column:", column_name, "\n")
+  }
+}
+
+rideable_type_inconsistencies <- inconsistencies(merged_data, 'rideable_type')
+start_station_name_inconsistencies <- inconsistencies(merged_data, 'start_station_name')
+end_station_name_inconsistencies <- inconsistencies(merged_data, 'end_station_name')
+member_casual_inconsistencies <- inconsistencies(merged_data, 'member_casual')
+```
+
+  We will cross reference the original data with the rows returned with inconsistent data to verify that the rows did not lose information from the merger. We will use the ride_id as the unique identifier for this.
+
+```{r results='FALSE'}
+# Define the function to compare the inconsistent ride_id with the original data
+compare_inconsistencies <- function(original_data, inconsistency_data, column_name) {
+  inconsistency_rides <- inconsistencies(inconsistency_data, column_name)
+  original_rides <- original_data[original_data$ride_id %in% inconsistency_rides, ]
+  inconsistency_rides_data <- inconsistency_data[inconsistency_data$ride_id %in% inconsistency_rides, ]
+  merged_data <- merge(original_rides, inconsistency_rides_data, by = "ride_id", suffixes = c("_original", "_inconsistency"))
+  non_matching_rows <- merged_data[rowSums(merged_data[,paste0(column_name, c("_original", "_inconsistency"))] != merged_data[,paste0(column_name, "_inconsistency")]), ]
+  return(non_matching_rows)
+}
+
+# Print damaged rows from merger
+print("Comparing inconsistencies in start_station_name")
+start_station_name_non_matching <- compare_inconsistencies(merged_data, start_station_name_inconsistencies, 'start_station_name')
+print(start_station_name_non_matching)
+
+print("Comparing inconsistencies in end_station_name")
+end_station_name_non_matching <- compare_inconsistencies(merged_data, end_station_name_inconsistencies, 'end_station_name')
+print(end_station_name_non_matching)
+```
+
+  Since no data was lost through the merger, we look to the inconsistencies, namely end_station_name_inconsistencies and start_station_name_inconsistencies to consider the rows for possible errors and look for potential fixes. The first notable problem is missing data from the column names start_station_name, and end_station_name. We want to check these rows with missing values for a value contained under the start_station_id and end_station_id for potential recovery.
+
+```{r}
+# Check for missing values in 'start_station_name' with a corresponding 'start_station_id'
+missing_start_station_name_with_id <- merged_data[is.na(merged_data$start_station_name) & !is.na(merged_data$start_station_id), ]
+
+# Check for missing values in 'end_station_name' with a corresponding 'end_station_id'
+missing_end_station_name_with_id <- merged_data[is.na(merged_data$end_station_name) & !is.na(merged_data$end_station_id), ]
+
+# Print the data frames
+print("Rows with missing start_station_name but with start_station_id:")
+print(missing_start_station_name_with_id)
+
+print("Rows with missing end_station_name but with end_station_id:")
+print(missing_end_station_name_with_id)
+```
+
+  Both dataframes return empty. We will need these columns for our analysis later, so we will remove rows with missing values under the columns start_station_name and end_station_name. Then we will verify no other missing entries throughout the entire dataset.
+
+```{r}
+# Remove rows with missing or blank values in 'start_station_name' or 'end_station_name'
+cleaned_data <- merged_data[nzchar(trimws(merged_data$start_station_name)) & nzchar(trimws(merged_data$end_station_name)), ]
+
+# Check for missing values in the entire cleaned dataset
+colSums(is.na(cleaned_data))
+```
+
+  We now turn out attention to the end_lat and end_lng. Since each station has a longitudinal and latitudinal coordinates that can be found on a public dataset (Divvy_Bicycle_Stations.csv) provided by the City of Chicago website. We will replace these empty cells with the corresponding coordinate values by matching the rows via the station name (start_station_name from the cleaned_data and station_name from the stations_data). First we load the new dataset and check to make sure all the entries for end_station_name and start_station_name are matches with the entries in station_name from our new dataset. The end goal here is to match every row in cleaned_data dataset with a row in stations_data to pull in the unique, central geo-locations so there is only one set of coordinates for each station. This will also be relevent when we check for station frequency.
+
+```{r}
+# Load the Divvy_Bicycle_Stations.csv dataset
+stations_data <- read.csv("Divvy_Bicycle_Stations.csv")
+
+# Copy 'Station.Name' to a new column
+stations_data$Original_Station_Name <- stations_data$Station.Name
+
+# Convert column names to lower case
+names(stations_data) <- tolower(names(stations_data))
+
+# Replace periods with underscores in column names
+names(stations_data) <- gsub("\\.", "_", names(stations_data))
+```
+
+  We check for matches across all of the cleaned_data and have the next set of code return rows without matches in the stations_data. The matches are made from looking at the stripped down address from start_station_name and end_station_name. Many of these we should anticipate coming from the inconsistencies since many of those results were based off spelling errors.
+
+```{r results='hide'}
+# Check for matches in 'start_station_name' and 'end_station_name' with 'station_name' in the stations data
+start_station_name_match <- cleaned_data$start_station_name %in% stations_data$station_name
+end_station_name_match <- cleaned_data$end_station_name %in% stations_data$station_name
+
+# Get the rows from the merged_data dataset that have no match in either 'start_station_name' or 'end_station_name'
+no_match_data <- cleaned_data[!start_station_name_match | !end_station_name_match, ]
+
+# Print the rows with no match
+print(no_match_data)
+
+# Get counts of entries in 'start_station_name'
+start_station_name_counts <- table(no_match_data$start_station_name)
+
+# Sort counts from largest to smallest
+sorted_start_station_name_counts <- sort(start_station_name_counts, decreasing = TRUE)
+
+# Print the counts
+print(sorted_start_station_name_counts)
+
+# Get counts of entries in 'start_station_name'
+end_station_name_counts <- table(no_match_data$end_station_name)
+
+# Sort counts from largest to smallest
+sorted_end_station_name_counts <- sort(end_station_name_counts, decreasing = TRUE)
+
+# Print the counts
+print(sorted_end_station_name_counts)
+```
+
+  From the previous code we see there are thousands of entries to look through. Details to the changes of the rows can be seen in the comments in the code. Most changes were made to create consistency between the datasets cleaned_data and stations_data. For example, the tag " - Public Rack" is not used on the same stations across the two datasets. So eliminating the tag from both should create the consistency we are looking for. Additionally, there are repair stations and warehouses that are not to be considered in the analysis, so these rows will be removed.
+
+```{r}
+# Remove "Public Rack - " from 'start_station_name' and 'end_station_name' to match stations_data
+cleaned_data$start_station_name <- gsub("^Public Rack - ", "", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub("^Public Rack - ", "", cleaned_data$end_station_name)
+
+# Remove " - midblock" from 'start_station_name' and 'end_station_name' to match stations_data
+cleaned_data$start_station_name <- gsub(" - midblock$", "", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub(" - midblock$", "", cleaned_data$end_station_name)
+
+# Remove ' Temp' from 'start_station_name' and 'end_station_name' to match stations_data
+cleaned_data$start_station_name <- gsub(" \\(Temp\\)$", "", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub(" \\(Temp\\)$", "", cleaned_data$end_station_name)
+
+# Remove ' Charging' from 'start_station_name' and 'end_station_name' to match stations_data
+cleaned_data$start_station_name <- gsub(" Charging$", "", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub(" Charging$", "", cleaned_data$end_station_name)
+
+# Remove "Public Rack - " from 'station_name' to match stations_data to match cleaned_data
+stations_data$station_name <- gsub("^Public Rack - ", "", stations_data$station_name)
+
+# Remove " - midblock" from 'station_name' to match cleaned_data
+stations_data$station_name <- gsub(" - midblock$", "", stations_data$station_name)
+
+# Remove ' Temp' from 'station_name' to match cleaned_data
+stations_data$station_name <- gsub(" \\(Temp\\)$", "", stations_data$station_name)
+
+# Replace '.', '/', '&', '(', and ')' with a space in cleaned_data
+cleaned_data$start_station_name <- gsub("[\\.\\/\\&\\(\\)\\*\\-]", " ", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub("[\\.\\/\\&\\(\\)\\*\\-]", " ", cleaned_data$end_station_name)
+
+# Replace '.', '/', '&', '(', and ')' with a space in stations_data
+stations_data$station_name <- gsub("[\\.\\/\\&\\(\\)\\*\\-]", " ", stations_data$station_name)
+
+# Convert to lowercase and trim whitespaces for 'start_station_name' and 'end_station_name' in cleaned_data
+cleaned_data$start_station_name <- tolower(trimws(cleaned_data$start_station_name))
+cleaned_data$end_station_name <- tolower(trimws(cleaned_data$end_station_name))
+
+# Convert to lowercase and trim whitespaces for 'station_name' in stations_data
+stations_data$station_name <- tolower(trimws(stations_data$station_name))
+
+# Replace two or more spaces with a single space in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub(" {2,}", " ", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub(" {2,}", " ", cleaned_data$end_station_name)
+
+# Remove double space from 'station_name' in stations_data
+stations_data$station_name <- gsub(" {2,}", " ", stations_data$station_name)
+
+# Filter out rows with "base 2132 w hubbard" in 'start_station_name' or 'end_station_name' because its a warehouse
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "base 2132 w hubbard" & cleaned_data$end_station_name != "base 2132 w hubbard", ]
+
+# Filter out rows with "base 2132 w hubbard warehouse" in 'start_station_name' or 'end_station_name' because its a warehouse
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "base 2132 w hubbard warehouse" & cleaned_data$end_station_name != "base 2132 w hubbard warehouse", ]
+
+# Replace "elizabeth st fulton st" with "elizabeth may st fulton st" in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("elizabeth st fulton st", "elizabeth may st fulton st", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub("elizabeth st fulton st", "elizabeth may st fulton st", cleaned_data$end_station_name)
+
+# Replace "green st madison ave" with "green st madison st" in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("green st madison ave", "green st madison st", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub("green st madison ave", "green st madison st", cleaned_data$end_station_name)
+
+# Replace "broadway wilson ave" with "broadway wilson truman college vaccination site" in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("broadway wilson ave", "broadway wilson truman college vaccination site", cleaned_data$start_station_name)
+cleaned_data$end_station_name <- gsub("broadway wilson ave", "broadway wilson truman college vaccination site", cleaned_data$end_station_name)
+
+# Replace 'malcolm x college' not followed by ' vaccination site' with 'malcolm x college vaccination site' in 'start_station_name'
+cleaned_data$start_station_name <- gsub("malcolm x college(?! vaccination site)", "malcolm x college vaccination site", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("malcolm x college(?! vaccination site)", "malcolm x college vaccination site", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'woodlawn ave 63rd st ne' with 'woodlawn ave 63rd st n' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("woodlawn ave 63rd st ne", "woodlawn ave 63rd st n", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("woodlawn ave 63rd st ne", "woodlawn ave 63rd st n", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'woodlawn ave 63rd st se' with 'woodlawn ave 63rd st s' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("woodlawn ave 63rd st se", "woodlawn ave 63rd st s", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("woodlawn ave 63rd st se", "woodlawn ave 63rd st s", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'woodlawn ave 63rd st se' with 'woodlawn ave 63rd st s' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("63rd western ave north corner", "63rd western ave n", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("63rd western ave north corner", "63rd western ave n", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'woodlawn ave 63rd st se' with 'woodlawn ave 63rd st s' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("63rd western ave south corner", "63rd western ave s", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("63rd western ave south corner", "63rd western ave s", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'ashland ave 45th st midblock south' with 'ashland ave 45th st s' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("ashland ave 45th st midblock south", "ashland ave 45th st s", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("ashland ave 45th st midblock south", "ashland ave 45th st s", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'keeler ave madison st' with 'keeler ave madison st s' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("keeler ave madison st", "keeler ave madison st s", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("keeler ave madison st", "keeler ave madison st s", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'mt greenwood library north' with 'mt greenwood library n' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("mt greenwood library north", "mt greenwood library n", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("mt greenwood library north", "mt greenwood library n", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'pubic rack pulaski rd 41st' with 'pulaski rd 41st' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("pubic rack pulaski rd 41st", "pulaski rd 41st", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("pubic rack pulaski rd 41st", "pulaski rd 41st", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'pubic rack pulaski rd 41st' with 'pulaski rd 41st' in 'start_station_name' and 'end_station_name'
+stations_data$station_name <- gsub("pubic rack pulaski rd 41st", "pulaski rd 41st", stations_data$station_name, perl = TRUE)
+
+# Replace 'kedzie ave amp; 62nd pl' with 'kedzie ave 62nd pl' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("kedzie ave amp; 62nd pl", "kedzie ave 62nd pl", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("kedzie ave amp; 62nd pl", "kedzie ave 62nd pl", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'pulaski rd amp; 65th st' with 'pulaski rd 65th st' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("pulaski rd amp; 65th st", "pulaski rd 65th st", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("pulaski rd amp; 65th st", "pulaski rd 65th st", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'city rack albany ave 103rd st' with 'albany ave 103rd st' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("city rack albany ave 103rd st", "albany ave 103rd st", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("city rack albany ave 103rd st", "albany ave 103rd st", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'n shore channel trail argyle ave' with 'n shore channel trail argyle st' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("n shore channel trail argyle ave", "n shore channel trail argyle st", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("n shore channel trail argyle ave", "n shore channel trail argyle st", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'whippie st 26th st' with 'whipple st 26th st' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("whippie st 26th st", "whipple st 26th st", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("whippie st 26th st", "whipple st 26th st", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'kedzie 103rd st west' with 'kedzie 103rd st w' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("kedzie 103rd st west", "kedzie 103rd st w", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("kedzie 103rd st west", "kedzie 103rd st w", cleaned_data$end_station_name, perl = TRUE)
+
+# Replace 'public rack albany ave 63rd st' with 'albany ave 63rd st' in 'stations_data'
+stations_data$station_name <- gsub("public rack albany ave 63rd st", "albany ave 63rd st", stations_data$station_name, perl = TRUE)
+
+# Replace 'public rack albany ave 63rd st' with 'albany ave 63rd st' in 'start_station_name' and 'end_station_name'
+cleaned_data$start_station_name <- gsub("public rack albany ave 63rd st", "albany ave 63rd st", cleaned_data$start_station_name, perl = TRUE)
+cleaned_data$end_station_name <- gsub("public rack albany ave 63rd st", "albany ave 63rd st", cleaned_data$end_station_name, perl = TRUE)
+
+# Removing some rows
+
+# Filter out rows with 'divvy cassette repair mobile station' in 'start_station_name' or 'end_station_name' because repair station
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "divvy cassette repair mobile station" & cleaned_data$end_station_name != "divvy cassette repair mobile station", ]
+
+# Filter out rows with 'pawel bialowas test pbsc charging station' in 'start_station_name' or 'end_station_name' because test
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "pawel bialowas test pbsc charging station" & cleaned_data$end_station_name != "pawel bialowas test pbsc charging station", ]
+
+# Filter out rows with 'west chi watson' in 'start_station_name' or 'end_station_name' because cannot confirm location
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "west chi watson" & cleaned_data$end_station_name != "west chi watson", ]
+
+# Filter out rows with 'westchi' in 'start_station_name' or 'end_station_name' because cannot confirm location
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "westchi" & cleaned_data$end_station_name != "westchi", ]
+
+# Filter out rows with 'hastings wh 2' in 'start_station_name' or 'end_station_name' because warehouse
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "hastings wh 2" & cleaned_data$end_station_name != "hastings wh 2", ]
+
+# Filter out rows with 'linder ave archer ave' in 'start_station_name' or 'end_station_name' - No Geo Location, freq = 1
+cleaned_data <- cleaned_data[cleaned_data$start_station_name != "linder ave archer ave" & cleaned_data$end_station_name != "linder ave archer ave", ]
+```
+
+  Adding missed locations - Here we identify serveral locations with missing matches. These locations are added to the stations_data dataset. The average of the latitude and the average of the longitude are used to establish geo-location. The columns id, total_docks, docks_in_service, and status are filled in with NA.
+
+```{r}
+# Define the list of station names
+station_names <- c("wells st institute pl", "eastlake ter howard st", "newhastings", "western ave 28th st", "kedzie ave 61st pl", "divvy valet oakwood beach", "kenneth ave 63rd st", "pulaski 52nd", "ewing ave 96th st", "kedvale ave 63rd st", "lamon ave archer ave")
+
+# Loop over the station names
+for (station_name in station_names) {
+  
+  # Check if current station_name is already present in stations_data
+  if (station_name %in% stations_data$station_name) {
+    next  # Skip this iteration if station_name is already present
+  }
+  
+  # Calculate average latitude and longitude for the current station
+  average_latitude <- mean(no_match_data$start_lat[no_match_data$start_station_name == station_name], na.rm = TRUE)
+  average_longitude <- mean(no_match_data$start_lng[no_match_data$start_station_name == station_name], na.rm = TRUE)
+  
+  # Create a new row for the current station
+  new_row <- data.frame(id = NA,  # Replace NA with the actual id if available
+                        station_name = station_name,
+                        total_docks = NA,
+                        docks_in_service = NA,
+                        status = NA,
+                        latitude = average_latitude,
+                        longitude = average_longitude,
+                        location = paste("(", average_latitude, ", ", average_longitude, ")", sep = ""),
+                        original_station_name = station_name)
+  
+  # Add the new row to stations_data
+  stations_data <- rbind(stations_data, new_row)
+}
+```
+
+  We rerun the following code to check for any remaining unmatched rows. 
+
+```{r results='hide'}
+# Check for matches in 'start_station_name' and 'end_station_name' with 'station_name' in the stations data
+start_station_name_match <- cleaned_data$start_station_name %in% stations_data$station_name
+end_station_name_match <- cleaned_data$end_station_name %in% stations_data$station_name
+
+# Get the rows from the merged_data dataset that have no match in either 'start_station_name' or 'end_station_name'
+no_match_data <- cleaned_data[!start_station_name_match | !end_station_name_match, ]
+
+# Print the rows with no match
+print(no_match_data)
+
+# Get counts of entries in 'start_station_name'
+start_station_name_counts <- table(no_match_data$start_station_name)
+
+# Sort counts from largest to smallest
+sorted_start_station_name_counts <- sort(start_station_name_counts, decreasing = TRUE)
+
+# Print the counts
+print(sorted_start_station_name_counts)
+
+# Get counts of entries in 'start_station_name'
+end_station_name_counts <- table(no_match_data$end_station_name)
+
+# Sort counts from largest to smallest
+sorted_end_station_name_counts <- sort(end_station_name_counts, decreasing = TRUE)
+
+# Print the counts
+print(sorted_end_station_name_counts)
+```
+
+  Everything is coming back clean, so we make the final changes before analysis are made.
+
+```{r}
+# Convert started_at and ended_at to Date type
+cleaned_data$started_at <- as.POSIXct(cleaned_data$started_at, format = "%Y-%m-%d %H:%M:%S")
+cleaned_data$ended_at <- as.POSIXct(cleaned_data$ended_at, format = "%Y-%m-%d %H:%M:%S")
+
+# Add new columns for day, week, weekday, month, and year
+cleaned_data$day <- as.Date(cleaned_data$started_at)
+cleaned_data$week <- format(cleaned_data$started_at, "%Y-%U")
+cleaned_data$weekday <- weekdays(cleaned_data$started_at)
+cleaned_data$month <- format(cleaned_data$started_at, "%Y-%m")
+cleaned_data$year <- format(cleaned_data$started_at, "%Y")
+
+# Join cleaned_data with stations_data to get original_station_name, longitude, and latitude based on start_station_name
+cleaned_data <- merge(cleaned_data, stations_data[,c("station_name", "original_station_name")], by.x="start_station_name", by.y="station_name", all.x=TRUE)
+```
+
+## 4. Exploratory Data Analysis
+
+### 4.1 Ride Frequency Analysis
+
+#### 4.1.1 Ride Frequency by Month
+
+* For our first visual, we will consider the ride frequency for the whole year of 2022 by first noting the monthly distribution. We see from the visual that there are some discernible patterns surrounding the behavior of both the member riders and casual riders.
+  + Both groups seem to favor riding the most in the months of June, July, and August.
+  + Both groups seem to ride the least in December, January, and February.
+  + Membership frequency outpaces casual frequency consistently throughout the year.
+
+```{r, fig.width=12, fig.height=6}
+# Filter out data from January 2023
+cleaned_data_filtered <- subset(cleaned_data, month != "2023-01")
+
+# Convert the 'month' column to a factor with formatted labels
+cleaned_data_filtered$month_factor <- factor(cleaned_data_filtered$month, levels = sort(unique(cleaned_data_filtered$month)), labels = format(as.Date(paste0(sort(unique(cleaned_data_filtered$month)), "-01")), "%B %Y"))
+
+# Bar plot of ride frequency for members vs casual riders by month
+plot <- ggplot(cleaned_data_filtered, aes(x=month_factor, fill=member_casual)) +
+  geom_bar(position=position_dodge(width=0.9)) +
+  labs(title="Ride Frequency by Month", x="Month", y="Count", fill="Rider Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.32)) +
+  scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+  scale_y_continuous(labels = scales::comma)  # Format the y-axis as numerical count
+
+print(plot)
+```
+
+#### 4.1.2 Ride Frequency by Day for each Month
+
+* The next set of visuals we will consider are depicting the ride frequency of each day for each month. Here We see from the visual that there are some descernable patterns surrounding the behavior of both the member riders and casual riders. We will investigate the major peaks in each month to try to determine any patterns.
+  + January food and sports events
+  + February Chicago Auto Show and food and sports events
+  + March 12th st. Patricks Day Parade, 
+  + April 23 rd and April 24th held some significant events including a run, concerts and sports.
+  + May 14th and 15th held a climb, food, and art festival, as well as sporting events while the 28th through the 30th held a music and food festival, memorial day parade and fireworks. Bike to work month.
+  + June 18th and 19th held a food festival and mustic and sporting events, while on Sunday June 26th was the pride parade as well as CDOT was offering free bike rentals on that day
+  + July 2nd through 4th was a Holiday weekend, July 10th was the DNC, while the 28th through the 31st held a major music festival and a few sporting events.
+  + August held mostly musical and food events and the Chicago Air and Water show.
+  + September 4th was the Bike the Drive event, 30th - Oct 9th was the World Music Festival
+  + October 9th was the Chicago marathon, 28th was Critical Mass
+  + November OUtside of the midterm elections, just major food/sports events
+  + December Food and sports
+
+```{r, fig.width=12, fig.height=6}
+# Exclude January 2023 and then get the list of unique months
+months_list <- unique(subset(cleaned_data, month != "2023-01")$month)
+
+# Calculate the maximum number of rides on any given day across all months
+max_rides <- max(table(cleaned_data$day, cleaned_data$member_casual))
+
+# Create a plot for each month
+for (current_month in months_list) {
+  
+  # Filter data for the current month
+  month_data <- subset(cleaned_data, month == current_month)
+  
+  # Identify Sundays
+  sundays <- as.Date(format(seq(min(month_data$day), max(month_data$day), by="days"), "%Y-%m-%d")[weekdays(seq(min(month_data$day), max(month_data$day), by="days")) == "Sunday"])
+  
+  # Create the plot for the current month
+  plot <- ggplot(month_data, aes(x=day, fill=member_casual)) +
+    geom_bar(position=position_dodge(width=0.9)) +
+    labs(title=paste("Ride Frequency by Day for", month.name[month(month_data$day[1])], year(month_data$day[1])),
+         x="Day of the Week (Day of the Month)", y="Count", fill="Rider Type") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.32)) +
+    scale_x_date(date_breaks="1 day", date_labels="%a (%d)", 
+                 breaks = c(sundays, as.Date(min(month_data$day):max(month_data$day))), 
+                 labels = c(rep("Sun", length(sundays)), weekdays(as.Date(min(month_data$day):max(month_data$day))))) +
+    scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+    scale_y_continuous(limits=c(0, max_rides)) +  # Set the y-axis limits
+    coord_cartesian(clip = "off")
+  
+  # Print the plot
+  print(plot)
+  
+  # Optional: Save each plot to a file
+    ggsave(paste0("ride_frequency_", current_month, ".png"), plot, width = 10, height = 6)
+}
+```
+
+#### 4.1.3 Ride Frequency by Season
+
+* Here we investigate the changes in our rider behavior by considering the seasonal changes and it's impact on our rider frequency for both groups.
+  + Appears to be stongly correlated to the average temperatures for the City of Chicago.
+
+```{r}
+# Define a function to assign seasons based on months
+get_season <- function(date_val) {
+  month_num <- month(date_val)
+  if(month_num %in% c(12, 1, 2)) return("Winter")
+  if(month_num %in% 3:5) return("Spring")
+  if(month_num %in% 6:8) return("Summer")
+  if(month_num %in% 9:11) return("Fall")
+}
+
+# Add a new column to the dataset for the season
+cleaned_data_filtered$season <- sapply(cleaned_data_filtered$started_at, get_season)
+
+# Order the seasons properly
+cleaned_data_filtered$season <- factor(cleaned_data_filtered$season, levels=c("Winter", "Spring", "Summer", "Fall"))
+
+# Bar plot of ride frequency for members vs casual riders by season
+plot <- ggplot(cleaned_data_filtered, aes(x=season, fill=member_casual)) +
+  geom_bar(position=position_dodge(width=0.9)) +
+  labs(title="Ride Frequency by Season", x="Season", y="Count", fill="Rider Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.6)) +
+  scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+  scale_y_continuous(labels = scales::comma)  # Format the y-axis as numerical count
+
+print(plot)
+```
+
+### 4.2 Peak Ride Times
+
+#### 4.2.1 Average Duration by Month
+
+* We now consider the changes in the duration of the ride for our groups by first looking at the average duration of rides for both of our groups.
+  + The duration for casual riders is consistently longer than the member riders.
+  + All of the boxplots are skewed to the right.
+  + Casual riders have a larger variability.
+  + Some whiskers extend past 0, into the negative. Since we cannot have negative durations, we will ignore these whiskers.
+
+```{r}
+# Filter out data from January 2023
+cleaned_data_filtered <- cleaned_data %>%
+  filter(month != "2023-01")
+
+# Compute ride duration in minutes
+cleaned_data_filtered <- cleaned_data_filtered %>%
+  mutate(duration = as.numeric(difftime(ended_at, started_at, units="mins")))
+
+# Calculate mean and standard deviation of duration
+mean_duration <- mean(cleaned_data_filtered$duration, na.rm = TRUE)
+sd_duration <- sd(cleaned_data_filtered$duration, na.rm = TRUE)
+
+# Filter out durations that are more than 3 standard deviations away from the mean
+cleaned_data_filtered <- cleaned_data_filtered %>%
+  filter(abs(duration - mean_duration) <= 3 * sd_duration)
+
+# Convert the 'month' column to a factor with formatted labels
+cleaned_data_filtered$month_factor <- factor(cleaned_data_filtered$month, levels = sort(unique(cleaned_data_filtered$month)), labels = format(as.Date(paste0(sort(unique(cleaned_data_filtered$month)), "-01")), "%B %Y"))
+
+# Plot boxplots
+plot <- ggplot(cleaned_data_filtered, aes(x=month_factor, y=duration, fill=member_casual)) +
+  geom_boxplot(outlier.shape = NA, position=position_dodge(width=0.8)) +  # Do not show individual outlier points for clarity
+  labs(title="Boxplots of Ride Duration by Month (Outliers Removed)", x="Month", y="Duration (minutes)", fill="Rider Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.32)) +
+  scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+  scale_y_continuous(limits = c(-10, 65), breaks = seq(-10, 65, by = 10))  # Adjust y-scale
+
+print(plot)
+```
+
+#### 4.2.2 Average Duration by Day for Each Month
+
+* We now consider the daily changes in the duration of the ride for our groups for each month.
+  + All boxes are consistently right skewed
+  + Casual Riders have a wider variability in their duration, consistently.
+  + No new insights beyond what the previous box plots revealed.
+
+```{r}
+# Compute ride duration in minutes
+cleaned_data <- cleaned_data %>%
+  mutate(duration = as.numeric(difftime(ended_at, started_at, units="mins")))
+
+# Calculate mean and standard deviation of duration
+mean_duration <- mean(cleaned_data$duration, na.rm = TRUE)
+sd_duration <- sd(cleaned_data$duration, na.rm = TRUE)
+
+# Filter out durations that are more than 3 standard deviations away from the mean
+cleaned_data <- cleaned_data %>%
+  filter(abs(duration - mean_duration) <= 3 * sd_duration)
+
+# Extract unique months and years (excluding January 2023)
+unique_months <- unique(cleaned_data %>%
+  filter(!(month(ended_at) == 1 & year(ended_at) == 2023)) %>%
+  select(ended_at) %>%
+  mutate(year_month = format(ended_at, "%Y-%m")) %>%
+  pull(year_month))
+
+# Loop through each unique month and generate a plot
+for (current_month in unique_months) {
+  
+  # Filter data for the current month
+  month_data <- cleaned_data %>%
+    filter(format(ended_at, "%Y-%m") == current_month)
+  
+  # Create a combined boxplot for all days of the month
+  plot <- ggplot(month_data, aes(x=as.factor(day(ended_at)), y=duration, fill=member_casual)) +
+    geom_boxplot(outlier.shape = NA, position=position_dodge(width=0.8)) +  # Do not show individual outlier points for clarity
+    labs(title=paste("Ride Duration for", format(as.Date(paste0(current_month, "-01")), "%B %Y")),
+         x="Day", y="Duration (minutes)", fill="Rider Type") +
+    theme_minimal() +
+    scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+    scale_y_continuous(limits = c(-25, 75), breaks = seq(-25, 75, by = 10))
+  
+  # Print the plot
+  print(plot)
+  
+  # Optional: Pause between plots for better visualization when running in interactive mode
+  Sys.sleep(1)
+}
+```
+
+#### 4.2.3 Top 10 Starting Locations for the year
+
+* We consider the top 10 starting locations for both of our groups.
+  + The casual riders preference lands strongly in favor of one location, whereas the member riders preference is more uniformly distributed across the top 10
+  + Each group has different preferences.
+
+```{r}
+# Count rides by rider type and start station
+station_counts <- cleaned_data %>%
+  group_by(member_casual, original_station_name) %>%
+  summarize(ride_count = n(), .groups="drop") %>%
+  arrange(member_casual, -ride_count)
+
+# Filter to top 10 stations for each rider type
+top_stations <- station_counts %>%
+  group_by(member_casual) %>%
+  slice_head(n=10)
+
+# Plot for Members
+plot_members <- ggplot(subset(top_stations, member_casual == "member"), aes(x=reorder(original_station_name, ride_count), y=ride_count, fill=member_casual)) +
+  geom_bar(stat="identity") +
+  coord_flip() +  # Flip the coordinates to make bars horizontal
+  labs(title="Top 10 Most Used Starting Stations by Members",
+       y="Count", x="Station", fill="Rider Type") +
+  theme_minimal() +
+  scale_fill_manual(values = c("member" = "steelblue1")) +
+  scale_y_continuous(limits = c(0, 60000))  # Set consistent scale
+
+print(plot_members)
+
+# Plot for Casual Riders
+plot_casual <- ggplot(subset(top_stations, member_casual == "casual"), aes(x=reorder(original_station_name, ride_count), y=ride_count, fill=member_casual)) +
+  geom_bar(stat="identity") +
+  coord_flip() +  # Flip the coordinates to make bars horizontal
+  labs(title="Top 10 Most Used Starting Stations by Casual Riders",
+       y="Count", x="Station", fill="Rider Type") +
+  theme_minimal() +
+  scale_fill_manual(values = c("casual" = "maroon2")) +
+  scale_y_continuous(limits = c(0, 60000))  # Set consistent scale
+
+print(plot_casual)
+```
+
+#### 4.2.3 Top 10 Starting Locations For the Month
+
+* We dig deeper into the starting locations by separating out the top ten stations for each month to see if there are any discernable patterns.
+  + The member frequency is relatively uniform, while the casual frequency appears to spike significantly during the warmer months.
+  + The top 5 prefered starting locations for casual riders does not change much until the colder months.
+  + The prefered startion locations for member riders, with few exceptions, seems consistent, though the order changes frequently.
+
+```{r}
+# Loop through each month of the year (assuming the data contains only one year)
+for (i in 1:12) {
+  
+  # Subset data for the given month
+  monthly_data <- subset(cleaned_data, month(started_at) == i)
+  
+  # Count rides by rider type, station, and month
+  station_counts <- monthly_data %>%
+    group_by(month = month(started_at), member_casual, original_station_name) %>%
+    summarize(ride_count = n(), .groups="drop") %>%
+    arrange(member_casual, -ride_count)
+  
+  # Filter to top 10 stations for each rider type
+  top_stations <- station_counts %>%
+    group_by(member_casual) %>%
+    slice_head(n=10)
+  
+  # Plot for both Members and Casual Riders in the same plot
+  plot_combined <- ggplot(top_stations, aes(x=reorder(original_station_name, ride_count), y=ride_count, fill=member_casual)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    labs(title=paste("Top 10 Most Used Starting Stations in", month.name[i]),
+         y="Count", x="Station", fill="Rider Type") +
+    theme_minimal() +
+    scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+    facet_wrap(~member_casual, scales = "free", ncol=1) +  # Facet by rider type and set ncol=1 for vertical display
+    scale_y_continuous(limits = c(0, 12000))  # Set the y-axis limits to 18,000
+  
+  # Print the combined plot
+  print(plot_combined)
+}
+```
+
+#### 4.2.3 Top 10 Starting Locations by Season
+
+* Since seasonality appears to have an impact on the frequency of rides taken, it would make sense that the location would also be subject to the seasonal changes. So our next step is to look into the top starting stations by season to find any patterns there.
+  + The warmer seasons all appear to have similar preferences.
+
+```{r}
+# Define a function to categorize each month into a season
+get_season <- function(date) {
+  month <- as.numeric(format(date, "%m"))
+  if (month %in% c(12, 1, 2)) return("Winter")
+  if (month %in% 3:5) return("Spring")
+  if (month %in% 6:8) return("Summer")
+  if (month %in% 9:11) return("Fall")
+}
+
+# Apply the function to the cleaned_data dataframe
+cleaned_data$season <- sapply(cleaned_data$started_at, get_season)
+
+# List of seasons
+seasons_list <- c("Winter", "Spring", "Summer", "Fall")
+
+# Loop through each season
+for (current_season in seasons_list) {
+  
+  # Subset data for the current season
+  season_data <- subset(cleaned_data, season == current_season)
+  
+  # Count rides by rider type and station
+  station_counts <- season_data %>%
+    group_by(season, member_casual, original_station_name) %>%
+    summarize(ride_count = n(), .groups="drop") %>%
+    arrange(member_casual, -ride_count)
+  
+  # Filter to top 10 stations for each rider type
+  top_stations <- station_counts %>%
+    group_by(member_casual) %>%
+    slice_head(n=10)
+  
+  # Plot for both Members and Casual Riders in the same plot
+  plot_combined <- ggplot(top_stations, aes(x=reorder(original_station_name, ride_count), y=ride_count, fill=member_casual)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    labs(title=paste("Top 10 Most Used Starting Stations during", current_season),
+         y="Count", x="Station", fill="Rider Type") +
+    theme_minimal() +
+    scale_fill_manual(values = c("member" = "steelblue1", "casual" = "maroon2")) +
+    facet_wrap(~member_casual, scales = "free", ncol=1) +  # Facet by rider type and set ncol=1 for vertical display
+    scale_y_continuous(limits = c(0, 30000))  # Set the y-axis limits to 18,000
+  
+  # Print the combined plot
+  print(plot_combined)
+}
+```
+
+### 4.3 Peak Ride Times
+
+#### 4.3.1 Peak Ride Time by Year
+
+* We now consider the peak ride time by year by looking at the most popular starting times for our riders, separated by groups.
+  + For our casual riders, 4:00 AM appears to have the lowest frequency for start times, while 5:00 PM has the highest frequency for start times.
+  + The bimodal nature of this graph suggest that our member riders start their day on the bike at 8:00 AM and end their day on a bike starting at 5:00 PM
+
+```{r}
+# Extracting the hour from the started_at column
+cleaned_data$hour <- hour(cleaned_data$started_at)
+
+# Yearly aggregation
+yearly_peak_data <- cleaned_data %>%
+  group_by(hour, member_casual) %>%
+  summarise(ride_count = n(), .groups="drop")
+
+# Visualizing yearly peak times
+plot_yearly <- ggplot(yearly_peak_data, aes(x=hour, y=ride_count, color=member_casual, group=member_casual)) +
+  geom_line(size=1) +
+  labs(title="Yearly Peak Ride Times", x="Hour of the Day", y="Number of Rides", color="Rider Type") +
+  theme_minimal() +
+  scale_x_continuous(breaks = 0:23) +  # Display all hours
+  scale_y_continuous(labels = comma) +  # Display counts without scientific notation
+  scale_color_manual(values = c("member" = "steelblue1", "casual" = "maroon2"))
+
+plot_yearly
+```
+
+#### 4.3.2 Peak Ride Time by Month
+
+* We now consider the peak ride times by month to determine if there are any hidden patterns that we did not see with the year distribution.
+  + The results are disturbingly consistent with Peak Ride Time by Year.
+
+```{r}
+# Monthly aggregation
+monthly_peak_data <- cleaned_data %>%
+  group_by(month = format(started_at, "%Y-%m"), hour, member_casual) %>%
+  summarise(ride_count = n(), .groups="drop")
+
+# Loop through each month to visualize the peak times
+for (current_month in unique(monthly_peak_data$month)) {
+  
+  # Filter data for the current month
+  month_data <- subset(monthly_peak_data, month == current_month)
+  
+  # Extract the month name
+  month_name <- month(as.Date(paste0(current_month, "-01")), label = TRUE, abbr = FALSE)
+  year_name <- year(as.Date(paste0(current_month, "-01")))
+  
+  # Generate the plot for the current month
+  plot_monthly <- ggplot(month_data, aes(x=hour, y=ride_count, color=member_casual, group=member_casual)) +
+    geom_line(size=1) +
+    labs(title=paste("Peak Ride Times for", month_name, year_name), 
+         x="Hour of the Day", y="Number of Rides", color="Rider Type") +
+    theme_minimal() +
+    scale_x_continuous(breaks = 0:23) +  # Display all hours
+    scale_y_continuous(labels = comma) +  # Display counts without scientific notation
+    scale_color_manual(values = c("member" = "steelblue1", "casual" = "maroon2"))
+  
+  # Print the plot
+  print(plot_monthly)
+}
+```
+
+### 4.4 Preferred Bike Type
+
+* Last, we consider the preferred bike type for our riders, looking over the whole year.
+  + Both groups consistently prefer the classic bike over the electric bike with one exception for casual riders in October, November and December where the electric_bike has a higher frequency than the classic_bike.
+
+```{r}
+# Filter data for 2022 and exclude docked bikes
+data_2022 <- subset(cleaned_data, year(started_at) == 2022 & rideable_type != "docked_bike")
+
+# Group and summarize data
+rideable_distribution <- data_2022 %>%
+  group_by(month = format(started_at, "%B"), member_casual, rideable_type) %>%
+  summarise(ride_count = n(), .groups="drop") %>%
+  arrange(match(month, month.name))  # Order by month name
+
+# Plot
+plot_rideable_distribution <- ggplot(rideable_distribution, aes(x=month, y=ride_count, fill=rideable_type)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(title="Distribution of Rideable Types for 2022", 
+       x="Month", y="Number of Rides", fill="Rideable Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.32)) +
+  facet_wrap(~member_casual, ncol=1) +
+  scale_fill_manual(values = c("classic_bike" = "steelblue1", "electric_bike" = "maroon2"))
+
+print(plot_rideable_distribution)
+```
+
+## 5. Key Insights and Recommendations
+
+### Key Insights:
+
+* Seasonal Variation in Ride Frequency: Both member and casual riders prefer biking in warmer months (June, July, and August) and tend to bike less during the colder months (December, January, and February). This trend is consistent with the average temperatures of the City of Chicago.
+
+* Event-driven Peaks: Significant events, festivals, and holidays in the city, like the Chicago Auto Show, St. Patrick's Day Parade, Pride Parade, Chicago Marathon, and major music and food festivals, lead to noticeable spikes in ride frequencies. These events are potential opportunities for promotions and partnerships.
+
+* Ride Durations & Variability: Casual riders, on average, have longer ride durations compared to members and exhibit greater variability in their ride durations. This suggests that casual riders may be more exploratory or leisurely in their rides while member riders tend to stick to a routine, likely due to a regular activity schedule throughout the week.
+
+* Station Preferences: There are distinct station preferences between casual and member riders. For casual riders, there's a strong inclination towards a specific station, especially during the warmer months, whereas member riders exhibit a more uniform distribution across the top 10 stations. This suggests differing motivations or use-cases for each group, possibly due to work activities versus play activities. 
+
+* Peak Ride Times: The bimodal nature of the ride start times for member riders suggests that many of them use the bikes for commuting, starting their day at 8:00 AM and ending around 5:00 PM. Casual riders, on the other hand, seem to have a peak preference for starting rides around 5:00 PM, possibly suggesting alternative methods for morning transportation, while preference for evening transportation trending to bike rental.
+
+* Bike Type Preferences: Across the year, both user groups show a consistent preference for the classic bike. However, during the colder months (October to December), casual riders showed a slight preference for electric bikes, possibly due to the ease of riding provided by electric assistance during colder weather.
+
+### Recommendations:
+
+* Seasonal Promotions: Given the clear seasonal preferences, consider launching promotional campaigns, discounts, or collaborate with local event coordinators during warmer months to further boost rider numbers. Conversely, to incentivize ridership during colder months, offer winter-specific promotions or partnerships with local businesses.
+
+* Event Partnerships: Collaborate with organizers of major city events to offer special promotions or bike stations at event venues. This can both serve existing users and attract new ones.
+
+* Targeted Marketing for Casual Riders: Given the longer and more variable ride durations for casual riders, consider marketing campaigns that highlight local scenic routes, local points of interest, or popular leisurely rides to further engage this group.
+
+* Enhance Popular Stations: Invest in infrastructure and routine maintenance at the most popular stations, especially those preferred by casual riders during warm months and most frequently used stations by member riders. This can ensure smooth service during peak times and events.
+
+* Commuter Packages for Members: Since many member riders seem to use the service for commuting, consider introducing special commuter packages or subscription models that offer benefits for regular use.
+
+* Expand Electric Bike Fleet in Colder Months: Given the observed preference for electric bikes by casual riders in colder months, consider increasing the availability of electric bikes during this period. This can cater to the demand and potentially attract more riders during the winter season.
+
+## 6. Conclusion
+
+  Our in-depth analysis of the 2022 biking data has revealed several key insights that hold significant implications for future strategies and operations:
+
+* Ride Frequency Patterns: Both members and casual riders demonstrate a clear preference for riding during the summer months - June, July, and August. This is contrasted by a significant dip in ride frequency during the colder months of December, January, and February. This seasonality, influenced by Chicago's climatic patterns, should guide our promotional and operational strategies.
+
+* Special Events & Peaks: Events, be they food festivals, sports events, or parades, have a notable impact on ride frequencies. Days with significant events, like the St. Patrick's Day Parade in March or the Pride Parade in June, see higher ride counts. Leveraging these events through partnerships or special promotions can be an effective strategy.
+
+* Ride Durations: Casual riders consistently take longer rides than members. This suggests that while members might use the service for routine or commute purposes, casual riders may be using it more for leisure or exploration.
+* Top Stations: Each rider group has different station preferences, and these preferences exhibit minor changes based on seasonality. Understanding these preferences can guide station maintenance, upgrades, and potential expansions.
+
+* Ride Times: Peak ride times provide insights into commuter behaviors. Members demonstrate a bimodal pattern, indicating potential commute hours, while casual riders show varied patterns that might be more leisure-oriented.
+
+* Bike Preferences: Across the year, both groups demonstrate a clear preference for classic bikes over electric ones, though there are seasonal variations. This preference can guide inventory and maintenance decisions.
+
+### Future analysis
+
+  As we strive to optimize services and anticipate the ever-evolving needs of users, it's paramount that we harness the power of our historical data. Leveraging advanced analytics and predictive modeling, we aim to address several key questions that can shape the future of our operations:
+
+* Rides Per Day: By analyzing trends and patterns from our past data, we can develop models to predict the daily ride volume, helping us ensure optimal availability and service quality.
+
+* Bike-Type Demand: As we diversify our fleet with electric bikes, forecasting the demand for each type becomes useful. This foresight can guide inventory decisions, ensuring user preferences are met and reduce idle assets.
+
+* Station Traffic: Predicting the future traffic of stations can enhance operational efficiency. By identifying potential high-traffic stations, we can optimize bike distribution, maintenance schedules, and even consider expansion where necessary.
+
+* Ride Frequency Factors: Understanding how external factors like time of day, weekdays, or seasons influence ride frequency can provide actionable insights. This knowledge can aid in tailored marketing campaigns, dynamic pricing strategies, and service adjustments during peak times.
+
+* Membership Trends: Membership is a key revenue stream and understanding its trajectory is essential. By modeling historical data, we can predict membership growth or decline, enabling proactive strategies for retention and acquisition.
+
+
+The future of urban mobility is dynamic, and with these insights, we can aim to be at the forefront of meeting and exceeding user expectations.
+
+## 7. Appendix
+
+#### Citations
+
+Divvy Bikes. (2022). Divvy Data. Index of bucket "divvy-tripdata". https://divvy-tripdata.s3.amazonaws.com/index.html
+Jonathan Levy. (2022). Chicago Data Portal. Divvy Bicycle Stations.  https://data.cityofchicago.org/Transportation/Divvy-Bicycle-Stations/bbyy-e7gq/data
